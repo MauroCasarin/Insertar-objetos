@@ -1,0 +1,5 @@
+{
+  "name": "LayerMaster: Compositor de Imágenes",
+  "description": "Herramienta para superponer imágenes, ajustar transparencia y remover fondos blancos utilizando Canvas API.",
+  "requestFramePermissions": []
+}

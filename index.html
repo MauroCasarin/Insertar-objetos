@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LayerMaster: Render Realista</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #0f172a; }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        
+        /* Sliders */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #6366f1;
+            cursor: pointer;
+            margin-top: -6px;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            background: #334155;
+            border-radius: 2px;
+        }
+        
+        /* Animations */
+        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+        
+        canvas { touch-action: none; }
+    </style>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="bg-slate-900 text-slate-200 font-sans h-screen flex flex-col lg:flex-row overflow-hidden">
+
+    <!-- SIDEBAR CONTROLS -->
+    <aside class="w-full lg:w-80 bg-slate-800 p-6 flex flex-col gap-5 shadow-2xl z-20 h-auto lg:h-full overflow-y-auto border-r border-slate-700">
+        
+        <!-- Header -->
+        <div class="flex items-center gap-2 mb-1">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg ring-1 ring-white/10">
+                <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+            </div>
+            <h1 class="text-2xl font-bold text-white tracking-tight">LayerMaster</h1>
+        </div>
+
+        <!-- File Uploads -->
+        <div class="space-y-3 mt-4">
+            <div class="group">
+                <label class="text-xs font-semibold text-slate-400 mb-1.5 block uppercase tracking-wide">1. Lugar (Fondo)</label>
+                <label class="flex items-center justify-center w-full p-3 border-2 border-dashed border-slate-600 rounded-xl hover:border-indigo-500 hover:bg-slate-700/50 transition-all cursor-pointer group-hover:shadow-lg bg-slate-800">
+                    <span class="text-sm text-slate-300 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        Subir Imagen
+                    </span>
+                    <input id="file-bg" type="file" accept="image/*" class="hidden" />
+                </label>
+            </div>
+
+            <div class="group">
+                <label class="text-xs font-semibold text-slate-400 mb-1.5 block uppercase tracking-wide">2. Objeto (Frente)</label>
+                <label class="flex items-center justify-center w-full p-3 border-2 border-dashed border-slate-600 rounded-xl hover:border-pink-500 hover:bg-slate-700/50 transition-all cursor-pointer group-hover:shadow-lg bg-slate-800">
+                    <span class="text-sm text-slate-300 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+                        Subir Objeto
+                    </span>
+                    <input id="file-fg" type="file" accept="image/*" class="hidden" />
+                </label>
+            </div>
+        </div>
+
+        <hr class="border-slate-700/50" />
+
+        <!-- Transform Controls -->
+        <div id="controls-container" class="space-y-5 opacity-50 pointer-events-none transition-opacity duration-200">
+            <h3 class="text-sm font-bold text-white uppercase tracking-wider">Ajustes Manuales</h3>
+            
+            <!-- Scale -->
+            <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                    <label class="text-xs text-slate-400">Tamaño</label>
+                    <span id="val-scale" class="text-xs font-mono bg-slate-900 px-1.5 py-0.5 rounded text-indigo-400">0.50x</span>
+                </div>
+                <input id="input-scale" type="range" min="0.1" max="3" step="0.05" value="0.5">
+            </div>
+
+            <!-- Rotation -->
+            <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                    <label class="text-xs text-slate-400">Rotación</label>
+                    <span id="val-rotation" class="text-xs font-mono bg-slate-900 px-1.5 py-0.5 rounded text-indigo-400">0°</span>
+                </div>
+                <input id="input-rotation" type="range" min="0" max="360" value="0">
+            </div>
+
+            <!-- Opacity -->
+            <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                    <label class="text-xs text-slate-400">Opacidad</label>
+                    <span id="val-opacity" class="text-xs font-mono bg-slate-900 px-1.5 py-0.5 rounded text-indigo-400">100%</span>
+                </div>
+                <input id="input-opacity" type="range" min="0" max="1" step="0.01" value="1">
+            </div>
+
+            <!-- Magic Toggle -->
+            <div class="flex items-center gap-3 bg-slate-700/20 p-3 rounded-lg border border-slate-700/50 hover:bg-slate-700/40 transition-colors">
+                <input id="input-remove-white" type="checkbox" class="w-4 h-4 text-indigo-600 rounded bg-slate-700 border-slate-600 cursor-pointer">
+                <label for="input-remove-white" class="text-xs text-slate-300 cursor-pointer select-none font-medium">
+                    Quitar fondo blanco (Magic)
+                </label>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="mt-auto pt-4 space-y-3">
+            <button id="btn-generate" class="w-full py-3.5 px-4 text-white font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 relative overflow-hidden bg-slate-700 cursor-not-allowed opacity-50 grayscale group border border-white/10" disabled>
+                <!-- Idle State -->
+                <span id="btn-text-idle" class="flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                    Render Realista (IA)
+                </span>
+                <!-- Loading State -->
+                <span id="btn-text-loading" class="hidden flex items-center gap-2">
+                    <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Procesando...
+                </span>
+            </button>
+
+            <button id="btn-export" class="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-medium rounded-xl transition-all flex items-center justify-center gap-2 text-xs border border-slate-600 hover:border-slate-500">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                Descargar Borrador
+            </button>
+        </div>
+    </aside>
+
+    <!-- MAIN CANVAS AREA -->
+    <main class="flex-1 relative flex items-center justify-center bg-black/50 p-4 overflow-hidden touch-none select-none">
+        <div class="relative shadow-2xl border border-slate-700 rounded-lg overflow-hidden bg-slate-900 shadow-purple-500/10">
+            <canvas id="main-canvas" class="cursor-grab max-w-full max-h-[85vh] block object-contain"></canvas>
+        </div>
+    </main>
+
+    <!-- RESULT MODAL -->
+    <div id="modal-result" class="fixed inset-0 z-50 items-center justify-center bg-black/90 backdrop-blur-md p-4 hidden">
+        <div class="bg-slate-800 rounded-2xl max-w-5xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-slate-700 fade-in">
+            <!-- Modal Header -->
+            <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/50">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <span class="text-purple-400 text-2xl">✨</span> Resultado IA
+                </h2>
+                <button id="btn-close-modal" class="text-slate-400 hover:text-white transition-colors p-2 hover:bg-slate-700 rounded-full">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            
+            <!-- Modal Image -->
+            <div class="flex-1 overflow-auto bg-slate-950 flex items-center justify-center p-6" 
+                 style="background-image: radial-gradient(#1e293b 1px, transparent 1px); background-size: 20px 20px;">
+                <img id="img-result" src="" alt="AI Generated Render" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl ring-1 ring-white/10" />
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="p-4 bg-slate-900 border-t border-slate-700 flex justify-end gap-3">
+                <button id="btn-close-modal-2" class="px-5 py-2.5 text-slate-300 hover:text-white font-medium transition-colors hover:bg-slate-800 rounded-lg">Cerrar</button>
+                <a id="link-download-ai" href="#" download="render-realista-ia.png" class="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-lg shadow-lg shadow-purple-900/20 flex items-center gap-2 transition-all transform hover:-translate-y-0.5">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                    Descargar Imagen
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP LOGIC -->
+    <script type="module" src="app.js"></script>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>
