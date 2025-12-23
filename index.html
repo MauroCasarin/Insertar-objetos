@@ -40,6 +40,24 @@
         
         canvas { touch-action: none; }
     </style>
+    
+    <!-- CRITICAL: Protocol Check -->
+    <script>
+        window.onload = function() {
+            if (window.location.protocol === 'file:') {
+                const banner = document.createElement('div');
+                banner.style.cssText = "position:fixed; top:0; left:0; width:100%; background: #ef4444; color: white; z-index: 9999; padding: 20px; text-align: center; font-family: sans-serif; font-weight: bold; border-bottom: 2px solid white;";
+                banner.innerHTML = `
+                    ⚠️ ERROR DE EJECUCIÓN ⚠️<br><br>
+                    Estás abriendo el archivo directamente (file://).<br>
+                    Los navegadores bloquean la carga de imágenes y scripts en este modo por seguridad.<br><br>
+                    👉 <b>Solución:</b> Debes usar un Servidor Local.<br>
+                    Si usas VS Code: Instala la extensión "Live Server", clic derecho en este archivo y "Open with Live Server".
+                `;
+                document.body.prepend(banner);
+            }
+        }
+    </script>
 <link rel="stylesheet" href="/index.css">
 </head>
 <body class="bg-slate-900 text-slate-200 font-sans h-screen flex flex-col lg:flex-row overflow-hidden">

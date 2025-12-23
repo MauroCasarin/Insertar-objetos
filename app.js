@@ -1,5 +1,10 @@
 import { GoogleGenAI } from "https://esm.sh/@google/genai@0.1.1";
 
+// SAFETY: Define process if missing (Local execution)
+if (typeof process === "undefined") {
+    window.process = { env: { API_KEY: "" } };
+}
+
 /**
  * ==========================================
  * 1. GLOBAL ERROR HANDLING & SETUP
@@ -192,7 +197,12 @@ async function generateRender() {
     setGenerating(true);
     
     try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const apiKey = process.env.API_KEY;
+        if (!apiKey) {
+            throw new Error("No API Key detected. If running locally, you must configure process.env.API_KEY.");
+        }
+
+        const ai = new GoogleGenAI({ apiKey: apiKey });
         const base64 = elements.canvas.toDataURL('image/png').split(',')[1];
         
         const response = await ai.models.generateContent({
