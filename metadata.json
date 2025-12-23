@@ -1,0 +1,5 @@
+{
+  "name": "LayerMaster AI: Compositor de Imágenes",
+  "description": "Una herramienta web para superponer imágenes, ajustar transformaciones y generar renders fotorrealistas con IA.",
+  "requestFramePermissions": []
+}
