@@ -1,5 +1,5 @@
 {
-  "name": "LayerMaster: Compositor de Imágenes",
-  "description": "Herramienta para superponer imágenes, ajustar transparencia y remover fondos blancos utilizando Canvas API.",
+  "name": "LayerMaster AI: Compositor de Imágenes",
+  "description": "Una herramienta web para superponer imágenes, ajustar transformaciones y generar renders fotorrealistas con IA.",
   "requestFramePermissions": []
 }
